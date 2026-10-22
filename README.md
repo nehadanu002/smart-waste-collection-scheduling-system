@@ -1,145 +1,136 @@
-# ♻️ Smart Waste Collection Scheduling System
+# Smart Waste Collection Scheduling System
+
+A web-based application that helps improve waste collection by prioritizing waste bins according to their fill levels and generating an efficient collection route.
 
 ## 📌 Project Overview
 
-The **Smart Waste Collection Scheduling System** is a Python-based mini-project developed as part of the **Design and Analysis of Algorithms (DAA)** course. The project aims to improve waste collection efficiency by prioritizing garbage bins based on their fill levels and urgency and generating an optimized collection schedule.
+The Smart Waste Collection Scheduling System is developed to make waste collection more organized and efficient. It allows users to view waste-bin information, prioritize bins that need collection, and generate a suggested route for collection vehicles.
 
-The system applies algorithmic techniques to determine which bins should be collected first and helps identify efficient routes between waste collection locations. It demonstrates how data structures and algorithms can be used to solve real-world waste management problems.
+The project demonstrates the use of **Data Structures and Algorithms (DAA)** in a practical waste-management scenario.
 
 ## 🎯 Objectives
 
-* To prioritize garbage bins based on their waste fill levels.
-* To generate an efficient waste collection schedule.
-* To apply DAA concepts to a real-world problem.
-* To explore shortest-path algorithms for route optimization.
-* To analyze the time and space complexity of the implemented algorithms.
+- Monitor and manage waste-bin fill levels.
+- Prioritize bins that require collection.
+- Generate a suggested route for waste collection.
+- Reduce unnecessary travel and improve collection planning.
+- Demonstrate the practical application of greedy algorithms and route optimization.
 
 ## ✨ Features
 
-* **Bin Management:** Add and display garbage bin information.
-* **Priority Calculation:** Identify bins that require urgent collection.
-* **Smart Scheduling:** Arrange bins according to their collection priority.
-* **Route Optimization:** Find shortest paths between locations.
-* **Algorithm Analysis:** Evaluate the efficiency of the implemented algorithms.
-* **Menu-Driven Interface:** Interact with the system through a simple console-based menu.
+- **Dashboard:** View waste-bin information and collection status.
+- **Bin Management:** Add or update bin details.
+- **Priority Scheduling:** Rank bins based on fill level using a greedy approach.
+- **Route Planning:** Suggest a collection route using the Nearest Neighbour heuristic.
+- **Collection Tracking:** Mark scheduled collections as completed.
+- **Database Integration:** Store application data using SQLite during local development.
 
 ## 🛠️ Technologies Used
 
-* **Programming Language:** Python
-* **Data Structures:** Lists, Graphs, Priority Queues
-* **Algorithms:** Greedy Algorithm, Sorting, Dijkstra's Shortest Path Algorithm
-* **Core Subject:** Design and Analysis of Algorithms (DAA)
+- **Frontend:** HTML, CSS, JavaScript
+- **Backend:** Python with Flask
+- **Database:** SQLite (local development)
+- **Algorithms:** Greedy scheduling and Nearest Neighbour route heuristic
+- **Tools:** Visual Studio Code, Git, GitHub
 
-## 🧠 DAA Concepts Applied
+## 🧠 Algorithms Used
 
-| Concept              | Application                                            |
-| -------------------- | ------------------------------------------------------ |
-| Greedy Algorithm     | Prioritizing bins for collection                       |
-| Sorting              | Arranging bins based on fill level or urgency          |
-| Priority Queue       | Managing bins according to priority                    |
-| Graph Representation | Representing collection locations and road connections |
-| Dijkstra's Algorithm | Finding shortest paths between locations               |
-| Complexity Analysis  | Evaluating algorithm performance                       |
+### 1. Greedy Priority Scheduling
 
-## ⚙️ How It Works
+Waste bins are sorted according to their fill levels so that fuller bins receive higher priority. In the implementation, bins with a fill level of at least 35% are considered for scheduling.
 
-1. Enter the details of garbage bins, including their locations and fill levels.
-2. The system evaluates the collection priority of each bin.
-3. Bins are arranged to generate a collection schedule.
-4. If route optimization is implemented, the system uses a graph to represent locations and road distances.
-5. Dijkstra's algorithm calculates shortest paths between locations.
-6. The system displays the generated collection schedule and route information.
+**Time Complexity:** \(O(n \log n)\) for sorting \(n\) bins.
 
-## 📋 Sample Output
+### 2. Nearest Neighbour Route Planning
+
+The algorithm repeatedly selects the nearest unvisited collection point from the current location. It provides a practical route suggestion, but it does not guarantee the globally shortest route.
+
+**Time Complexity:** Typically \(O(n^2)\) for a straightforward implementation with \(n\) collection points.
+
+## 📂 Project Structure
 
 ```text
-========================================
- SMART WASTE COLLECTION SCHEDULING SYSTEM
-========================================
-
-Bin ID    Location    Fill Level    Priority
---------------------------------------------
-B1        Block A        95%         HIGH
-B2        Block B        60%         MEDIUM
-B3        Block C        85%         HIGH
-B4        Block D        30%         LOW
-
-Generated Collection Schedule:
-1. B1 - Block A - 95% - HIGH
-2. B3 - Block C - 85% - HIGH
-3. B2 - Block B - 60% - MEDIUM
-4. B4 - Block D - 30% - LOW
+smart_waste_collection_system/
+├── app.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+├── static/
+│   ├── style.css
+│   └── script.js
+└── templates/
+    ├── base.html
+    ├── index.html
+    ├── schedule.html
+    └── route.html
 ```
 
-*Note: The output above is illustrative. Actual output depends on the implemented program and scheduling rules.*
-
-## 🚀 Installation and Execution
+## ⚙️ Installation and Setup
 
 ### Prerequisites
 
-* Python 3.x
-* A code editor such as Visual Studio Code or PyCharm
+- Python 3.10 or a compatible version
+- Git
+- A code editor such as Visual Studio Code
 
 ### Steps
 
 1. Clone the repository:
 
    ```bash
-   git clone <your-repository-url>
+   git clone https://github.com/nehadanu002/smart-waste-collection-scheduling-system.git
    ```
 
-2. Navigate to the project folder:
+2. Move into the project directory:
 
    ```bash
    cd smart-waste-collection-scheduling-system
    ```
 
-3. Run the Python program:
+3. Create and activate a virtual environment:
 
-   ```bash
-   python main.py
+   **Windows PowerShell**
+   
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
    ```
 
-   Replace `main.py` with the actual name of your Python file if it differs.
+4. Install dependencies:
 
-## 📊 Algorithm Analysis
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-The time and space complexity depend on the specific data structures and algorithms used in the implementation.
+5. Start the application:
 
-* **Sorting:** Typically \(O(n \log n)\) using an efficient comparison-based sorting algorithm.
-* **Priority Queue:** Heap-based insertion and extraction typically take \(O(\log n)\) per operation.
-* **Dijkstra's Algorithm:** With an adjacency list and a binary heap, the typical time complexity is \(O((V+E)\log V)\).
+   ```bash
+   python app.py
+   ```
 
-Where:
+6. Open the local URL displayed in the terminal, usually:
 
-* \(n\) = Number of garbage bins
-* \(V\) = Number of locations (vertices)
-* \(E\) = Number of road connections (edges)
+   `http://127.0.0.1:5000`
 
-## 🌱 Future Enhancements
+## 🚀 Future Scope
 
-* Integration with IoT-enabled smart garbage bins.
-* Real-time waste-level monitoring.
-* GPS-based vehicle tracking.
-* Dynamic route planning based on traffic conditions.
-* Graphical user interface for easier interaction.
-* Database integration for storing bin and collection records.
+- Integrate GPS-based location tracking.
+- Use real-time fill-level sensors.
+- Connect the application to a persistent cloud database.
+- Improve route optimization for larger numbers of bins.
+- Add user authentication and administrative controls.
+- Deploy the application online for remote access.
 
-## 🎓 Learning Outcomes
+## 🎓 Academic Purpose
 
-* Understanding the practical application of DAA concepts.
-* Implementing sorting, greedy strategies, and graph algorithms.
-* Using appropriate data structures to organize collection data.
-* Analyzing time and space complexity.
-* Applying algorithmic problem-solving to a real-world challenge.
+This project demonstrates the practical application of algorithm design, scheduling, route planning, database management, and web development for a real-world waste-management problem.
 
-## 👩‍💻 Project Information
+## 👩‍💻 Author
 
-* **Project Title:** Smart Waste Collection Scheduling System
-* **Project Type:** Academic Mini-Project
-* **Subject:** Design and Analysis of Algorithms (DAA)
-* **Language:** Python
+**Neha Danu**
+
+MCA (Data Science)
 
 ## 📄 License
 
-This project is intended for educational and academic purposes. A suitable open-source license can be added if you plan to distribute or reuse the code publicly.
+This project is developed for educational and academic purposes.
