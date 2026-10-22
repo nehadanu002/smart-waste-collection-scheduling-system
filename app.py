@@ -1,13 +1,18 @@
 
-from flask import Flask, render_template, request, redirect, url_for, flash
-import sqlite3
-from pathlib import Path
+import os
 from datetime import datetime
 
-app = Flask(__name__)
-app.secret_key = "smart-waste-demo-key"
+import psycopg
+from psycopg.rows import dict_row
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, flash
 
-DB_PATH = Path(__file__).with_name("waste_management.db")
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "local-development-only-key")
+app.config["DATABASE_INITIALIZED"] = False
+
 
 # Demo campus coordinates (x, y)
 COORDS = {
@@ -21,54 +26,70 @@ COORDS = {
 
 
 def connect_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise RuntimeError(
+            "DATABASE_URL is missing. Set it in your .env file "
+            "locally or in Vercel Environment Variables."
+        )
+
+    return psycopg.connect(
+        database_url,
+        row_factory=dict_row
+    )
 
 
 def init_db():
     with connect_db() as db:
-        db.executescript("""
-        CREATE TABLE IF NOT EXISTS bins (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            bin_code TEXT UNIQUE NOT NULL,
-            location TEXT NOT NULL,
-            fill_level INTEGER NOT NULL,
-            capacity_liters INTEGER NOT NULL DEFAULT 240,
-            updated_at TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS collections (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            bin_id INTEGER NOT NULL,
-            scheduled_at TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'Pending',
-            route_order INTEGER,
-            FOREIGN KEY(bin_id) REFERENCES bins(id)
-        );
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS bins (
+                id BIGSERIAL PRIMARY KEY,
+                bin_code TEXT UNIQUE NOT NULL,
+                location TEXT NOT NULL,
+                fill_level INTEGER NOT NULL,
+                capacity_liters INTEGER NOT NULL DEFAULT 240,
+                updated_at TEXT NOT NULL
+            )
         """)
 
-        count = db.execute(
-            "SELECT COUNT(*) FROM bins"
-        ).fetchone()[0]
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS collections (
+                id BIGSERIAL PRIMARY KEY,
+                bin_id BIGINT NOT NULL REFERENCES bins(id),
+                scheduled_at TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Pending',
+                route_order INTEGER
+            )
+        """)
 
-        if count == 0:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M")
-            sample_bins = [
-                ("BIN-101", "Library Gate", 92, 240, now),
-                ("BIN-102", "Hostel Block A", 68, 240, now),
-                ("BIN-103", "Cafeteria", 97, 360, now),
-                ("BIN-104", "Academic Block", 35, 240, now),
-                ("BIN-105", "Sports Ground", 76, 360, now),
-                ("BIN-106", "Main Entrance", 18, 240, now),
-            ]
+        now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-            db.executemany("""
+        sample_bins = [
+            ("BIN-101", "Library Gate", 92, 240, now),
+            ("BIN-102", "Hostel Block A", 68, 240, now),
+            ("BIN-103", "Cafeteria", 97, 360, now),
+            ("BIN-104", "Academic Block", 35, 240, now),
+            ("BIN-105", "Sports Ground", 76, 360, now),
+            ("BIN-106", "Main Entrance", 18, 240, now),
+        ]
+
+        # Psycopg 3: executemany() belongs to a cursor.
+        with db.cursor() as cur:
+            cur.executemany("""
                 INSERT INTO bins
-                (bin_code, location, fill_level,
-                 capacity_liters, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                    (bin_code, location, fill_level,
+                     capacity_liters, updated_at)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (bin_code) DO NOTHING
             """, sample_bins)
+
+
+@app.before_request
+def ensure_database():
+    if not app.config["DATABASE_INITIALIZED"]:
+        init_db()
+        app.config["DATABASE_INITIALIZED"] = True
 
 
 def get_bins():
@@ -78,6 +99,7 @@ def get_bins():
         ).fetchall()
 
     bins = []
+
     for row in rows:
         item = dict(row)
         fill = item["fill_level"]
@@ -98,21 +120,16 @@ def get_bins():
 
 
 def schedule_collections():
-    # GREEDY ALGORITHM:
-    # Prioritize bins with the highest fill level.
+    # Greedy algorithm: prioritize bins with the highest fill level.
     bins = [
         b for b in get_bins()
         if b["fill_level"] >= 35
     ]
 
-    bins.sort(
-        key=lambda b: (-b["fill_level"], b["id"])
-    )
-
+    bins.sort(key=lambda b: (-b["fill_level"], b["id"]))
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     with connect_db() as db:
-        # Regenerate pending records but retain completed history.
         db.execute(
             "DELETE FROM collections WHERE status = 'Pending'"
         )
@@ -120,8 +137,8 @@ def schedule_collections():
         for order, bin_data in enumerate(bins, start=1):
             db.execute("""
                 INSERT INTO collections
-                (bin_id, scheduled_at, status, route_order)
-                VALUES (?, ?, 'Pending', ?)
+                    (bin_id, scheduled_at, status, route_order)
+                VALUES (%s, %s, 'Pending', %s)
             """, (bin_data["id"], now, order))
 
     return bins
@@ -132,7 +149,7 @@ def manhattan_distance(a, b):
 
 
 def optimize_route(bins):
-    # GREEDY NEAREST-NEIGHBOUR HEURISTIC
+    # Greedy nearest-neighbour route heuristic.
     remaining = []
 
     for b in bins:
@@ -166,14 +183,16 @@ def dashboard():
 
     with connect_db() as db:
         pending = db.execute("""
-            SELECT COUNT(*) FROM collections
+            SELECT COUNT(*) AS total
+            FROM collections
             WHERE status = 'Pending'
-        """).fetchone()[0]
+        """).fetchone()["total"]
 
         completed = db.execute("""
-            SELECT COUNT(*) FROM collections
+            SELECT COUNT(*) AS total
+            FROM collections
             WHERE status = 'Completed'
-        """).fetchone()[0]
+        """).fetchone()["total"]
 
     return render_template(
         "index.html",
@@ -205,14 +224,14 @@ def add_bin():
         with connect_db() as db:
             db.execute("""
                 INSERT INTO bins
-                (bin_code, location, fill_level,
-                 capacity_liters, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                    (bin_code, location, fill_level,
+                     capacity_liters, updated_at)
+                VALUES (%s, %s, %s, %s, %s)
             """, (code, location, fill, capacity, now))
 
         flash("Bin added successfully!", "success")
 
-    except sqlite3.IntegrityError:
+    except psycopg.IntegrityError:
         flash("Bin code already exists.", "error")
     except ValueError:
         flash("Enter valid bin details.", "error")
@@ -233,8 +252,8 @@ def update_bin(bin_id):
         with connect_db() as db:
             db.execute("""
                 UPDATE bins
-                SET fill_level = ?, updated_at = ?
-                WHERE id = ?
+                SET fill_level = %s, updated_at = %s
+                WHERE id = %s
             """, (fill, now, bin_id))
 
         flash("Fill level updated.", "success")
@@ -249,17 +268,23 @@ def update_bin(bin_id):
 def schedule_page():
     if request.method == "POST":
         scheduled = schedule_collections()
+
         flash(
             f"Schedule generated for {len(scheduled)} bins.",
             "success"
         )
+
         return redirect(url_for("schedule_page"))
 
     with connect_db() as db:
         collections = db.execute("""
             SELECT c.id AS collection_id,
-                   c.scheduled_at, c.status, c.route_order,
-                   b.bin_code, b.location, b.fill_level
+                   c.scheduled_at,
+                   c.status,
+                   c.route_order,
+                   b.bin_code,
+                   b.location,
+                   b.fill_level
             FROM collections c
             JOIN bins b ON b.id = c.bin_id
             ORDER BY
@@ -268,7 +293,8 @@ def schedule_page():
         """).fetchall()
 
     return render_template(
-        "schedule.html", collections=collections
+        "schedule.html",
+        collections=collections
     )
 
 
@@ -288,13 +314,16 @@ def route_page():
     )
 
 
-@app.route("/collections/<int:collection_id>/complete",
-           methods=["POST"])
+@app.route(
+    "/collections/<int:collection_id>/complete",
+    methods=["POST"]
+)
 def complete_collection(collection_id):
     with connect_db() as db:
         record = db.execute("""
-            SELECT bin_id, status FROM collections
-            WHERE id = ?
+            SELECT bin_id, status
+            FROM collections
+            WHERE id = %s
         """, (collection_id,)).fetchone()
 
         if record is None:
@@ -309,12 +338,13 @@ def complete_collection(collection_id):
             db.execute("""
                 UPDATE collections
                 SET status = 'Completed'
-                WHERE id = ?
+                WHERE id = %s
             """, (collection_id,))
 
             db.execute("""
-                UPDATE bins SET fill_level = 0, updated_at = ?
-                WHERE id = ?
+                UPDATE bins
+                SET fill_level = 0, updated_at = %s
+                WHERE id = %s
             """, (now, record["bin_id"]))
 
             flash("Collection completed!", "success")
@@ -323,5 +353,4 @@ def complete_collection(collection_id):
 
 
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
