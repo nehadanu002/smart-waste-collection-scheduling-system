@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoRoute | Smart Waste System</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}"
+            defer></script>
+</head>
+<body>
+    <aside class="sidebar">
+        <a class="brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-icon">♻</span>
+            <span>EcoRoute<small>SMART WASTE SYSTEM</small></span>
+        </a>
+
+        <p class="nav-label">WORKSPACE</p>
+        <a class="nav-link" href="{{ url_for('dashboard') }}">▦ Dashboard</a>
+        <a class="nav-link" href="{{ url_for('schedule_page') }}">◷ Collection Schedule</a>
+        <a class="nav-link" href="{{ url_for('route_page') }}">⌁ Route Optimizer</a>
+
+        <div class="sidebar-note">
+            <strong>● Local demo mode</strong>
+            <p>Monitor bins and plan smarter pickups.</p>
+        </div>
+
+        <div class="sidebar-footer">
+            DAA MINI PROJECT
+            <strong>Smart City • Cleaner Future</strong>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">WASTE OPERATIONS / CAMPUS</p>
+                <h1>{% block heading %}Dashboard{% endblock %}</h1>
+            </div>
+            <div class="avatar">AD</div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+
+        <footer class="page-footer">
+            EcoRoute · Smart Waste Collection Scheduling System
+        </footer>
+    </main>
+</body>
+</html>

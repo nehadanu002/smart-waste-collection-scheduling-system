@@ -1,0 +1,83 @@
+
+{% extends "base.html" %}
+
+{% block heading %}Collection Schedule{% endblock %}
+
+{% block content %}
+
+<div class="section-heading">
+    <div>
+        <h2>Pickup Plan</h2>
+        <p>Collections are ordered by bin fill level.</p>
+    </div>
+
+    <form action="{{ url_for('schedule_page') }}" method="post">
+        <button class="button primary" type="submit">
+            Generate New Schedule
+        </button>
+    </form>
+</div>
+
+<div class="panel table-panel">
+    <table>
+        <thead>
+            <tr>
+                <th>ORDER</th>
+                <th>BIN</th>
+                <th>LOCATION</th>
+                <th>FILL LEVEL</th>
+                <th>SCHEDULED AT</th>
+                <th>STATUS</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for c in collections %}
+            <tr>
+                <td>{{ c.route_order or "—" }}</td>
+                <td><strong>{{ c.bin_code }}</strong></td>
+                <td>{{ c.location }}</td>
+                <td>{{ c.fill_level }}%</td>
+                <td>{{ c.scheduled_at }}</td>
+                <td>
+                    {% if c.status == "Completed" %}
+                        <span class="priority low">Completed</span>
+                    {% else %}
+                        <form action="{{ url_for('complete_collection', collection_id=c.collection_id) }}"
+                              method="post">
+                            <button class="small-button" type="submit">
+                                Mark Complete ✓
+                            </button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">
+                    No schedule yet. Generate one from this page.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="info-grid">
+    <div class="info-card">
+        <h3>Greedy Scheduling</h3>
+        <p>Higher-fill bins receive earlier priority.</p>
+    </div>
+
+    <div class="info-card">
+        <h3>Database Storage</h3>
+        <p>Schedule and completion records are stored locally.</p>
+    </div>
+
+    <div class="info-card">
+        <h3>Collection Threshold</h3>
+        <p>Bins at 35% fill or above are scheduled.</p>
+    </div>
+</div>
+
+{% endblock %}

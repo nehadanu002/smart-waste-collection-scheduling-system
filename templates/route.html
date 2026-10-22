@@ -1,0 +1,54 @@
+
+{% extends "base.html" %}
+
+{% block heading %}Route Optimizer{% endblock %}
+
+{% block content %}
+
+<section class="welcome">
+    <p class="eyebrow">GREEDY ROUTE PLANNING</p>
+    <h2>Suggested Collection Route</h2>
+    <p>Visit nearby collection points using demo campus coordinates.</p>
+</section>
+
+<div class="route-summary">
+    <div>
+        <p>ESTIMATED DISTANCE</p>
+        <h2>{{ total_distance }} grid units</h2>
+        <p>Starts at Main Entrance.</p>
+    </div>
+</div>
+
+<div class="panel route-list">
+    <div class="route-stop">
+        <span class="stop-marker">S</span>
+        <div>
+            <strong>Main Entrance</strong>
+            <p>Starting point</p>
+        </div>
+    </div>
+
+    {% for bin in route %}
+    <div class="route-stop">
+        <span class="stop-marker">{{ loop.index }}</span>
+        <div>
+            <strong>{{ bin.location }}</strong>
+            <p>{{ bin.bin_code }} · {{ bin.fill_level }}% full</p>
+        </div>
+        <span class="priority {{ bin.priority|lower }}">
+            {{ bin.priority }}
+        </span>
+    </div>
+    {% else %}
+    <p>No bins currently meet the collection threshold.</p>
+    {% endfor %}
+</div>
+
+<div class="notice">
+    <strong>DAA note:</strong>
+    Nearest Neighbour is a greedy heuristic. It does not guarantee
+    the globally shortest route. The displayed coordinates and
+    distances are illustrative, not actual road distances.
+</div>
+
+{% endblock %}

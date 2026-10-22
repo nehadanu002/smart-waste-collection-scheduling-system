@@ -1,0 +1,147 @@
+
+{% extends "base.html" %}
+
+{% block heading %}Operations Dashboard{% endblock %}
+
+{% block content %}
+
+<section class="welcome">
+    <p class="eyebrow">SMART CAMPUS OPERATIONS</p>
+    <h2>A cleaner campus starts with a smarter route.</h2>
+    <p>Monitor waste levels, prioritize collections, and plan pickups.</p>
+</section>
+
+<section class="stats">
+    <div class="stat-card">
+        <span>Total Bins</span>
+        <h2>{{ total }}</h2>
+        <p>Registered collection points</p>
+    </div>
+
+    <div class="stat-card">
+        <span>Critical Bins</span>
+        <h2>{{ critical }}</h2>
+        <p>At least 85% full</p>
+    </div>
+
+    <div class="stat-card">
+        <span>Pending Pickups</span>
+        <h2>{{ pending }}</h2>
+        <p>Awaiting collection</p>
+    </div>
+
+    <div class="stat-card">
+        <span>Completed</span>
+        <h2>{{ completed }}</h2>
+        <p>Completed collection records</p>
+    </div>
+</section>
+
+<div class="section-heading">
+    <div>
+        <h2>Bin Monitoring</h2>
+        <p>Review and update current bin fill levels.</p>
+    </div>
+    <a class="button secondary"
+       href="{{ url_for('route_page') }}">View Route →</a>
+</div>
+
+<div class="panel table-panel">
+    <table>
+        <thead>
+            <tr>
+                <th>BIN ID</th>
+                <th>LOCATION</th>
+                <th>FILL LEVEL</th>
+                <th>PRIORITY</th>
+                <th>UPDATE</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for bin in bins %}
+            <tr>
+                <td><strong>{{ bin.bin_code }}</strong></td>
+                <td>{{ bin.location }}</td>
+                <td>
+                    <div class="fill-wrap">
+                        <div class="progress">
+                            <span class="{% if bin.fill_level >= 85 %}critical{% elif bin.fill_level >= 60 %}high{% else %}normal{% endif %}"
+                                  style="width: {{ bin.fill_level }}%">
+                            </span>
+                        </div>
+                        {{ bin.fill_level }}%
+                    </div>
+                </td>
+                <td>
+                    <span class="priority {{ bin.priority|lower }}">
+                        {{ bin.priority }}
+                    </span>
+                </td>
+                <td>
+                    <form class="inline-form"
+                          action="{{ url_for('update_bin', bin_id=bin.id) }}"
+                          method="post">
+                        <input type="number" name="fill_level"
+                               min="0" max="100"
+                               value="{{ bin.fill_level }}" required>
+                        <button class="small-button">Save</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">No bins registered yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="section-heading">
+    <div>
+        <h2>Register a Bin</h2>
+        <p>Add another collection point.</p>
+    </div>
+</div>
+
+<form class="panel add-form"
+      action="{{ url_for('add_bin') }}" method="post">
+
+    <label>Bin Code
+        <input name="bin_code" placeholder="BIN-107" required>
+    </label>
+
+    <label>Location
+        <input name="location" placeholder="Science Block" required>
+    </label>
+
+    <label>Fill Level (%)
+        <input type="number" name="fill_level"
+               min="0" max="100" value="50" required>
+    </label>
+
+    <label>Capacity (litres)
+        <select name="capacity_liters">
+            <option value="120">120</option>
+            <option value="240" selected>240</option>
+            <option value="360">360</option>
+            <option value="660">660</option>
+        </select>
+    </label>
+
+    <button class="button primary" type="submit">+ Add Bin</button>
+</form>
+
+<section class="action-banner">
+    <div>
+        <h3>Ready to plan today's pickups?</h3>
+        <p>Prioritize bins with higher fill levels first.</p>
+    </div>
+
+    <form action="{{ url_for('schedule_page') }}" method="post">
+        <button class="button primary" type="submit">
+            Generate Schedule →
+        </button>
+    </form>
+</section>
+
+{% endblock %}
